@@ -357,6 +357,14 @@ static void __init gic_dist_init(struct gic_chip_data *gic)
 	u32 cpumask;
 	unsigned int gic_irqs = gic->gic_irqs;
 	void __iomem *base = gic_data_dist_base(gic);
+	u32 cpu = cpu_logical_map(smp_processor_id());
+
+	cpumask = readl_relaxed(base + GIC_DIST_TARGET + 0);
+	if(!cpumask) {
+		cpumask = 1 << cpu;
+		cpumask |= cpumask << 8;
+		cpumask |= cpumask << 16;
+	}
 
 	writel_relaxed(0, base + GIC_DIST_CTRL);
 
@@ -369,7 +377,6 @@ static void __init gic_dist_init(struct gic_chip_data *gic)
 	/*
 	 * Set all global interrupts to this CPU only.
 	 */
-	cpumask = readl_relaxed(base + GIC_DIST_TARGET + 0);
 	for (i = 32; i < gic_irqs; i += 4)
 		writel_relaxed(cpumask, base + GIC_DIST_TARGET + i * 4 / 4);
 
